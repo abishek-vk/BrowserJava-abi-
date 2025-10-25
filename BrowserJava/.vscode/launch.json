@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "NitronBrowser",
+      "request": "launch",
+      "mainClass": "NitronBrowser",
+      "vmArgs": "--module-path \"c:/javafx-sdk-24.0.2/lib\" --add-modules javafx.controls,javafx.web --enable-native-access=javafx.graphics --enable-native-access=javafx.web",
+      "classPaths": [
+        "${workspaceFolder}/bin",
+        "${workspaceFolder}/lib/postgresql-42.7.7.jar"
+      ],
+      "projectName": "BrowserJava_2df50dc"
+    }
+  ]
+}
