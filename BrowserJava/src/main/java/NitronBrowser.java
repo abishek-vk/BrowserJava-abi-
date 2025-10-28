@@ -134,8 +134,9 @@ public class NitronBrowser extends Application {
 
         Tab tab = new Tab(title, tabContent);
         tab.setOnClosed(e -> {
-            if (tabPane.getTabs().size() == 1) {
-                ((Stage) root.getScene().getWindow()).close();
+            // If all tabs are closed, open a new home tab
+            if (tabPane.getTabs().isEmpty()) {
+                addNewTab(defaultHomepage, "Home");
             }
         });
 
@@ -360,44 +361,38 @@ public class NitronBrowser extends Application {
     }
 
     private void applyWebpageTheme(WebEngine engine) {
-        // Remove Brave download prompts and ads
-        String removeAds = "var elements = document.querySelectorAll('[class*=\"brave\"], [class*=\"download\"], .adsbox, .adbox, .banner-ad'); " +
-                "elements.forEach(function(el) { el.style.display = 'none'; }); " +
-                "var iframes = document.querySelectorAll('iframe[src*=\"brave\"], iframe[src*=\"download\"]'); " +
-                "iframes.forEach(function(el) { el.style.display = 'none'; }); " +
-                "var scripts = document.querySelectorAll('script[src*=\"brave\"], script[src*=\"ad\"], script[src*=\"analytics\"]'); " +
-                "scripts.forEach(function(el) { el.remove(); }); ";
-        
-        if (darkModeEnabled) {
-            // Inject dark mode CSS into the webpage
-            String darkCss = removeAds +
-                    "var style = document.createElement('style'); " +
-                    "style.innerHTML = 'body, html { background-color: #1e1e1e !important; color: #e0e0e0 !important; } " +
-                    "a { color: #64b5f6 !important; } " +
-                    "button { background-color: #333333 !important; color: #e0e0e0 !important; border: 1px solid #555555 !important; } " +
-                    "input, textarea, select { background-color: #2d2d2d !important; color: #e0e0e0 !important; border: 1px solid #555555 !important; } " +
-                    "pre, code { background-color: #2d2d2d !important; color: #e0e0e0 !important; } " +
-                    ".header, .navbar, nav { background-color: #252525 !important; } " +
-                    "table { border-color: #555555 !important; } " +
-                    "td, th { border-color: #555555 !important; background-color: #2d2d2d !important; color: #e0e0e0 !important; } " +
-                    "[class*=\"banner\"], [class*=\"ad\"], [class*=\"promo\"] { display: none !important; }'; " +
-                    "document.head.appendChild(style);";
-            engine.executeScript(darkCss);
-        } else {
-            // Inject light mode CSS into the webpage
-            String lightCss = removeAds +
-                    "var style = document.createElement('style'); " +
-                    "style.innerHTML = 'body, html { background-color: #ffffff !important; color: #000000 !important; } " +
-                    "a { color: #0066cc !important; } " +
-                    "button { background-color: #e0e0e0 !important; color: #000000 !important; border: 1px solid #999999 !important; } " +
-                    "input, textarea, select { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #cccccc !important; } " +
-                    "pre, code { background-color: #f5f5f5 !important; color: #000000 !important; } " +
-                    ".header, .navbar, nav { background-color: #f0f0f0 !important; } " +
-                    "table { border-color: #cccccc !important; } " +
-                    "td, th { border-color: #cccccc !important; background-color: #f5f5f5 !important; color: #000000 !important; } " +
-                    "[class*=\"banner\"], [class*=\"ad\"], [class*=\"promo\"] { display: none !important; }'; " +
-                    "document.head.appendChild(style);";
-            engine.executeScript(lightCss);
+        try {
+            if (darkModeEnabled) {
+                // Inject dark mode CSS into the webpage
+                String darkCss = "try { " +
+                        "var style = document.createElement('style'); " +
+                        "style.innerHTML = 'body, html { background-color: #1a1a1a !important; color: #e0e0e0 !important; } " +
+                        "a { color: #64b5f6 !important; } " +
+                        "button { background-color: #333333 !important; color: #e0e0e0 !important; } " +
+                        "input, textarea { background-color: #2d2d2d !important; color: #e0e0e0 !important; } " +
+                        "pre, code { background-color: #2d2d2d !important; color: #e0e0e0 !important; } " +
+                        "nav { background-color: #252525 !important; } " +
+                        "td, th { background-color: #2d2d2d !important; color: #e0e0e0 !important; }'; " +
+                        "document.head.appendChild(style); " +
+                        "} catch(e) {}";
+                engine.executeScript(darkCss);
+            } else {
+                // Inject light mode CSS into the webpage
+                String lightCss = "try { " +
+                        "var style = document.createElement('style'); " +
+                        "style.innerHTML = 'body, html { background-color: #ffffff !important; color: #000000 !important; } " +
+                        "a { color: #0066cc !important; } " +
+                        "button { background-color: #e0e0e0 !important; color: #000000 !important; } " +
+                        "input, textarea { background-color: #ffffff !important; color: #000000 !important; } " +
+                        "pre, code { background-color: #f5f5f5 !important; color: #000000 !important; } " +
+                        "nav { background-color: #f0f0f0 !important; } " +
+                        "td, th { background-color: #f5f5f5 !important; color: #000000 !important; }'; " +
+                        "document.head.appendChild(style); " +
+                        "} catch(e) {}";
+                engine.executeScript(lightCss);
+            }
+        } catch (Exception e) {
+            System.err.println("Error applying webpage theme: " + e.getMessage());
         }
     }
 
