@@ -1,4 +1,5 @@
 import java.util.List;
+import java.util.Map;
 
 /**
  * Interface for database operations.
@@ -35,6 +36,12 @@ public interface DatabaseOperations {
      * @return List of history URLs
      */
     List<String> getHistory();
+
+    /**
+     * Get history entries grouped by day
+     * @return Map with date as key and list of URLs as value
+     */
+    Map<String, List<String>> getHistoryByDay();
 
     /**
      * Delete a history entry from the database

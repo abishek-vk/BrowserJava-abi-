@@ -1,4 +1,5 @@
 import java.util.List;
+import java.util.Map;
 
 /**
  * HistoryManager is a derived class from BrowserFeature.
@@ -62,6 +63,17 @@ public class HistoryManager extends BrowserFeature {
             return java.util.Collections.emptyList();
         }
         return dbOperations.getHistory();
+    }
+
+    /**
+     * Get browsing history grouped by day
+     * @return Map with date as key and list of URLs as value
+     */
+    public Map<String, List<String>> getHistoryByDay() {
+        if (!isEnabled) {
+            return java.util.Collections.emptyMap();
+        }
+        return dbOperations.getHistoryByDay();
     }
 
     /**

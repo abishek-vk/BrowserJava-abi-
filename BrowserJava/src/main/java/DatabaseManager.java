@@ -2,8 +2,8 @@ import com.mongodb.client.*;
 import com.mongodb.client.model.Sorts;
 import org.bson.Document;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * DatabaseManager implements the DatabaseOperations interface.
@@ -28,12 +28,14 @@ public class DatabaseManager implements DatabaseOperations {
     }
 
     // Bookmarks
+    @Override
     public void addBookmark(String url) {
         Document doc = new Document("url", url)
                       .append("added_at", new java.util.Date());
         bookmarks.insertOne(doc);
     }
 
+    @Override
     public List<String> getBookmarks() {
         List<String> bookmarkList = new ArrayList<>();
         bookmarks.find()
@@ -42,17 +44,20 @@ public class DatabaseManager implements DatabaseOperations {
         return bookmarkList;
     }
 
+    @Override
     public void deleteBookmark(String url) {
         bookmarks.deleteOne(new Document("url", url));
     }
 
     // History
+    @Override
     public void addHistory(String url) {
         Document doc = new Document("url", url)
                       .append("visited_at", new java.util.Date());
         history.insertOne(doc);
     }
 
+    @Override
     public List<String> getHistory() {
         List<String> historyList = new ArrayList<>();
         history.find()
@@ -61,10 +66,32 @@ public class DatabaseManager implements DatabaseOperations {
         return historyList;
     }
 
+    @Override
+    public Map<String, List<String>> getHistoryByDay() {
+        Map<String, List<String>> historyByDay = new LinkedHashMap<>();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("EEEE, MMMM d, yyyy");
+        
+        history.find()
+              .sort(Sorts.descending("visited_at"))
+              .forEach(doc -> {
+                  String url = doc.getString("url");
+                  Date visitedAt = doc.getDate("visited_at");
+                  
+                  if (url != null && visitedAt != null) {
+                      String dateKey = dateFormat.format(visitedAt);
+                      historyByDay.computeIfAbsent(dateKey, k -> new ArrayList<>()).add(url);
+                  }
+              });
+        
+        return historyByDay;
+    }
+
+    @Override
     public void deleteHistory(String url) {
         history.deleteOne(new Document("url", url));
     }
 
+    @Override
     public void close() {
         if (mongoClient != null) {
             mongoClient.close();

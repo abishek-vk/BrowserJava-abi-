@@ -10,6 +10,7 @@ import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 
 import java.util.List;
+import java.util.Map;
 
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
@@ -25,6 +26,7 @@ import javafx.scene.layout.VBox;
 
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Alert;
+import javafx.scene.control.ScrollPane;
 
 
 public class NitronBrowser extends Application {
@@ -231,39 +233,82 @@ public class NitronBrowser extends Application {
     }
 
     private void showHistoryDialog() {
-        List<String> history = dbManager.getHistory();
-        ObservableList<String> items = FXCollections.observableArrayList(history);
-        ListView<String> listView = new ListView<>(items);
-        listView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
-
-        ContextMenu contextMenu = new ContextMenu();
-        MenuItem deleteItem = new MenuItem("Delete");
-        deleteItem.setOnAction(e -> {
-            String selected = listView.getSelectionModel().getSelectedItem();
-            if (selected != null) {
-                dbManager.deleteHistory(selected);
-                items.remove(selected);
+        Map<String, List<String>> historyByDay = dbManager.getHistoryByDay();
+        
+        VBox mainContainer = new VBox(10);
+        mainContainer.setPadding(new Insets(10));
+        
+        if (historyByDay.isEmpty()) {
+            Label emptyLabel = new Label("No history available");
+            mainContainer.getChildren().add(emptyLabel);
+        } else {
+            for (Map.Entry<String, List<String>> entry : historyByDay.entrySet()) {
+                String date = entry.getKey();
+                List<String> urls = entry.getValue();
+                
+                // Create date header
+                Label dateLabel = new Label(date);
+                dateLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+                mainContainer.getChildren().add(dateLabel);
+                
+                // Create list view for this day's history
+                ObservableList<String> items = FXCollections.observableArrayList(urls);
+                ListView<String> listView = new ListView<>(items);
+                listView.setPrefHeight(Math.min(urls.size() * 24 + 2, 200));
+                listView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+                
+                // Context menu for delete
+                ContextMenu contextMenu = new ContextMenu();
+                MenuItem deleteItem = new MenuItem("Delete");
+                deleteItem.setOnAction(e -> {
+                    String selected = listView.getSelectionModel().getSelectedItem();
+                    if (selected != null) {
+                        dbManager.deleteHistory(selected);
+                        items.remove(selected);
+                        // If no more items for this day, refresh the dialog
+                        if (items.isEmpty()) {
+                            Stage stage = (Stage) mainContainer.getScene().getWindow();
+                            stage.close();
+                            showHistoryDialog();
+                        }
+                    }
+                });
+                contextMenu.getItems().add(deleteItem);
+                listView.setContextMenu(contextMenu);
+                
+                // Double-click to open URL
+                listView.setOnMouseClicked(event -> {
+                    if (event.getClickCount() == 2) {
+                        String selected = listView.getSelectionModel().getSelectedItem();
+                        if (selected != null) {
+                            getCurrentWebView().getEngine().load(selected);
+                        }
+                    }
+                });
+                
+                mainContainer.getChildren().add(listView);
+                
+                // Add separator between days
+                javafx.scene.control.Separator separator = new javafx.scene.control.Separator();
+                mainContainer.getChildren().add(separator);
             }
-        });
-        contextMenu.getItems().add(deleteItem);
-        listView.setContextMenu(contextMenu);
-
-        listView.setOnMouseClicked(event -> {
-            if (event.getClickCount() == 2) {
-                String selected = listView.getSelectionModel().getSelectedItem();
-                if (selected != null) {
-                    getCurrentWebView().getEngine().load(selected);
-                }
-            }
-        });
-
+        }
+        
+        ScrollPane scrollPane = new ScrollPane(mainContainer);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setPrefViewportHeight(500);
+        
         Stage dialog = new Stage();
         dialog.initModality(Modality.APPLICATION_MODAL);
-        dialog.setTitle("History");
-        VBox vbox = new VBox(new Label("Double-click to open. Right-click to delete."), listView);
-        vbox.setPadding(new Insets(10));
-        vbox.setSpacing(8);
-        Scene scene = new Scene(vbox, 400, 400);
+        dialog.setTitle("History - Grouped by Day");
+        
+        VBox dialogContent = new VBox(10);
+        dialogContent.setPadding(new Insets(10));
+        Label instruction = new Label("Double-click to open. Right-click to delete.");
+        instruction.setStyle("-fx-font-style: italic;");
+        dialogContent.getChildren().addAll(instruction, scrollPane);
+        
+        Scene scene = new Scene(dialogContent, 600, 600);
         dialog.setScene(scene);
         dialog.showAndWait();
     }
