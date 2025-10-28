@@ -5,7 +5,11 @@ import org.bson.Document;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DatabaseManager {
+/**
+ * DatabaseManager implements the DatabaseOperations interface.
+ * Manages all database operations for the Nitron Browser using MongoDB.
+ */
+public class DatabaseManager implements DatabaseOperations {
     private final MongoClient mongoClient;
     private final MongoDatabase database;
     private final MongoCollection<Document> bookmarks;

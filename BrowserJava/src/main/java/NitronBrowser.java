@@ -34,6 +34,12 @@ public class NitronBrowser extends Application {
     private BorderPane root;
     private ToolBar navToolbar;
     private DatabaseManager dbManager;
+    
+    // New feature managers
+    private BookmarkManager bookmarkManager;
+    private HistoryManager historyManager;
+    private ThemeManager themeManager;
+    private DaySummaryPage daySummaryPage;
 
     public static void main(String[] args) {
         launch(args);
@@ -42,6 +48,20 @@ public class NitronBrowser extends Application {
     @Override
     public void start(Stage primaryStage) {
         dbManager = new DatabaseManager();
+        
+        // Initialize all feature managers
+        historyManager = new HistoryManager(dbManager);
+        historyManager.initialize();
+        
+        bookmarkManager = new BookmarkManager(dbManager);
+        bookmarkManager.initialize();
+        
+        themeManager = new ThemeManager();
+        themeManager.initialize();
+        
+        // Create day summary page for when browser closes
+        daySummaryPage = new DaySummaryPage(historyManager);
+        
         root = new BorderPane();
         tabPane = new TabPane();
         tabPane.setTabClosingPolicy(TabClosingPolicy.ALL_TABS);
@@ -58,6 +78,12 @@ public class NitronBrowser extends Application {
         primaryStage.setScene(scene);
         
         applyStyles();
+        
+        // Show day summary when browser closes
+        primaryStage.setOnCloseRequest(e -> {
+            System.out.println(daySummaryPage.getStatisticsAsString());
+            daySummaryPage.show();
+        });
         
         primaryStage.show();
     }
@@ -157,8 +183,12 @@ public class NitronBrowser extends Application {
         WebView webView = getCurrentWebView();
         if (webView != null) {
             String url = webView.getEngine().getLocation();
-            dbManager.addBookmark(url);
-            showAlert("Bookmark Added", "Bookmarked: " + url);
+            try {
+                bookmarkManager.addBookmark(url);
+                showAlert("Bookmark Added", "Bookmarked: " + url);
+            } catch (InvalidURLException e) {
+                showAlert("Error", "Failed to bookmark: " + e.getMessage());
+            }
         }
     }
 
